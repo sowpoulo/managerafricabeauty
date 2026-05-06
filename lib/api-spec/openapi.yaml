@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AfricaBeauty - Salon Management SaaS API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management (employees)
+  - name: services
+    description: Salon services/prestations
+  - name: appointments
+    description: Appointment management
+  - name: dashboard
+    description: Analytics and KPIs
+  - name: salon
+    description: Salon profile
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +35,821 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Auth token + user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /salon:
+    get:
+      operationId: getSalon
+      tags: [salon]
+      summary: Get salon info
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Salon profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Salon"
+    patch:
+      operationId: updateSalon
+      tags: [salon]
+      summary: Update salon info
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSalonBody"
+      responses:
+        "200":
+          description: Updated salon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Salon"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List employees
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [MANAGER, EMPLOYEE]
+        - name: active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create employee
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get employee by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update employee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete employee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List services/prestations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Create service/prestation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceBody"
+      responses:
+        "201":
+          description: Created service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Get service by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServiceBody"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Delete service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List appointments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED]
+        - name: employeeId
+          in: query
+          schema:
+            type: integer
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentWithRelations"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Create appointment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppointmentBody"
+      responses:
+        "201":
+          description: Created appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentWithRelations"
+
+  /appointments/{id}:
+    get:
+      operationId: getAppointment
+      tags: [appointments]
+      summary: Get appointment by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentWithRelations"
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAppointmentBody"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentWithRelations"
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Delete appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get KPI stats (revenue today/week/month, appointment counts)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/revenue-chart:
+    get:
+      operationId: getRevenueChart
+      tags: [dashboard]
+      summary: Get revenue chart data by period (only days with revenue)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [day, week, month]
+      responses:
+        "200":
+          description: Revenue chart data points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDataPoint"
+
+  /dashboard/employee-ranking:
+    get:
+      operationId: getEmployeeRanking
+      tags: [dashboard]
+      summary: Get employees ranked by revenue with progress bar data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: month
+      responses:
+        "200":
+          description: Employee ranking list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmployeeRankingItem"
+
+  /dashboard/my-stats:
+    get:
+      operationId: getMyStats
+      tags: [dashboard]
+      summary: Get current employee's own revenue stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Personal stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyStats"
+
+  /dashboard/my-schedule:
+    get:
+      operationId: getMySchedule
+      tags: [dashboard]
+      summary: Get current employee's appointments (today and week)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [day, week]
+            default: day
+      responses:
+        "200":
+          description: Schedule appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentWithRelations"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    Salon:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+      required: [id, name, address]
+
+    UpdateSalonBody:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [MANAGER, EMPLOYEE]
+        active:
+          type: boolean
+        salonId:
+          type: integer
+      required: [id, name, email, role, active, salonId]
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [MANAGER, EMPLOYEE]
+      required: [name, email, password, role]
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [MANAGER, EMPLOYEE]
+        active:
+          type: boolean
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        duration:
+          type: integer
+          description: Duration in minutes
+        active:
+          type: boolean
+        salonId:
+          type: integer
+      required: [id, name, price, duration, active, salonId]
+
+    CreateServiceBody:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        duration:
+          type: integer
+      required: [name, price, duration]
+
+    UpdateServiceBody:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        duration:
+          type: integer
+        active:
+          type: boolean
+
+    AppointmentWithRelations:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        date:
+          type: string
+          format: date-time
+        price:
+          type: number
+        status:
+          type: string
+          enum: [CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED]
+        rating:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        salonId:
+          type: integer
+        serviceId:
+          type: integer
+        employeeId:
+          type: integer
+        service:
+          $ref: "#/components/schemas/Service"
+        employee:
+          $ref: "#/components/schemas/User"
+      required: [id, clientName, date, price, status, salonId, serviceId, employeeId, service, employee]
+
+    CreateAppointmentBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        date:
+          type: string
+          format: date-time
+        price:
+          type: number
+        status:
+          type: string
+          enum: [CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED]
+          default: CONFIRMED
+        serviceId:
+          type: integer
+        employeeId:
+          type: integer
+        rating:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+      required: [clientName, date, price, serviceId, employeeId]
+
+    UpdateAppointmentBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        date:
+          type: string
+          format: date-time
+        price:
+          type: number
+        status:
+          type: string
+          enum: [CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED]
+        serviceId:
+          type: integer
+        employeeId:
+          type: integer
+        rating:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+
+    DashboardStats:
+      type: object
+      properties:
+        revenueToday:
+          type: number
+        revenueWeek:
+          type: number
+        revenueMonth:
+          type: number
+        appointmentsToday:
+          type: integer
+        appointmentsWeek:
+          type: integer
+        appointmentsMonth:
+          type: integer
+        activeEmployees:
+          type: integer
+        completionRate:
+          type: number
+          description: Percentage of completed appointments
+      required: [revenueToday, revenueWeek, revenueMonth, appointmentsToday, appointmentsWeek, appointmentsMonth, activeEmployees, completionRate]
+
+    RevenueDataPoint:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Date label (e.g. "Lun", "01/05", "Semaine 1")
+        date:
+          type: string
+        revenue:
+          type: number
+        appointments:
+          type: integer
+      required: [label, date, revenue, appointments]
+
+    EmployeeRankingItem:
+      type: object
+      properties:
+        employeeId:
+          type: integer
+        name:
+          type: string
+        revenue:
+          type: number
+        appointments:
+          type: integer
+        progressPercent:
+          type: number
+          description: Percentage of revenue relative to top employee
+      required: [employeeId, name, revenue, appointments, progressPercent]
+
+    MyStats:
+      type: object
+      properties:
+        revenueToday:
+          type: number
+        revenueWeek:
+          type: number
+        revenueMonth:
+          type: number
+        appointmentsToday:
+          type: integer
+        appointmentsWeek:
+          type: integer
+        appointmentsMonth:
+          type: integer
+      required: [revenueToday, revenueWeek, revenueMonth, appointmentsToday, appointmentsWeek, appointmentsMonth]

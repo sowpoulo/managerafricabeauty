@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "AfricaBeauty"
+version = "1.0.0"
+id = "artifacts/africa-beauty"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19643
+
+[services.development]
+run = "pnpm --filter @workspace/africa-beauty run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/africa-beauty", "run", "build" ]
+publicDir = "artifacts/africa-beauty/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19643"
+BASE_PATH = "/"
