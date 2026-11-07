@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListUsers,
@@ -24,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
 
 interface UserForm {
   name: string;
@@ -46,7 +47,28 @@ export default function EmployeesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<UserForm>(DEFAULT_FORM);
+  const [ribDialog, setRibDialog] = useState<{ id: number; name: string; bankName: string; bankRib: string } | null>(null);
+  const [ribSaving, setRibSaving] = useState(false);
   const qc = useQueryClient();
+  async function saveRib() {
+    if (!ribDialog) return;
+    setRibSaving(true);
+    try {
+      const token = localStorage.getItem("africa_beauty_token");
+      const res = await fetch(`/api/users/${ribDialog.id}/bank-info`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ bankName: ribDialog.bankName, bankRib: ribDialog.bankRib }),
+      });
+      if (!res.ok) throw new Error("Erreur");
+      setRibDialog(null);
+      qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+    } catch (e) {
+      alert("Erreur lors de l'enregistrement");
+    } finally {
+      setRibSaving(false);
+    }
+  }
 
   const { data: users, isLoading } = useListUsers();
   const createMut = useCreateUser();
@@ -129,7 +151,7 @@ export default function EmployeesPage() {
                       <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium text-sm text-foreground">{user.name}</span>
+                      <Link href={`/employees/${user.id}`} className="font-medium text-sm text-foreground hover:text-primary hover:underline">{user.name}</Link>
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-sm text-muted-foreground">{user.email}</td>
@@ -148,6 +170,13 @@ export default function EmployeesPage() {
                       </button>
                       <button onClick={() => handleDelete(user.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors">
                         <Trash2 className="w-3.5 h-3.5 text-destructive/70" />
+                      </button>
+                      <button
+                        onClick={() => setRibDialog({ id: user.id, name: user.name, bankName: (user as any).bankName || "", bankRib: (user as any).bankRib || "" })}
+                        className="p-1.5 rounded hover:bg-blue-50 transition-colors"
+                        title="Infos bancaires"
+                      >
+                        <Building2 className="w-3.5 h-3.5 text-blue-500" />
                       </button>
                     </div>
                   </td>
@@ -195,6 +224,40 @@ export default function EmployeesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {ribDialog && (
+        <Dialog open onOpenChange={() => setRibDialog(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Infos bancaires — {ribDialog.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label>Nom de la banque</Label>
+                <Input
+                  value={ribDialog.bankName}
+                  onChange={(e) => setRibDialog({ ...ribDialog, bankName: e.target.value })}
+                  placeholder="Ex: CIH Bank, Attijariwafa..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>RIB / IBAN</Label>
+                <Input
+                  value={ribDialog.bankRib}
+                  onChange={(e) => setRibDialog({ ...ribDialog, bankRib: e.target.value })}
+                  placeholder="Ex: 230780123456789012345678"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button variant="outline" onClick={() => setRibDialog(null)}>Annuler</Button>
+                <Button onClick={saveRib} disabled={ribSaving}>
+                  {ribSaving ? "Enregistrement..." : "Enregistrer"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

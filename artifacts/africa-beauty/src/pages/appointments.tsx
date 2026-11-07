@@ -239,7 +239,7 @@ export default function AppointmentsPage() {
                 <Input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Prix (€)</Label>
+                <Label>Prix (MAD)</Label>
                 <Input type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
               </div>
             </div>

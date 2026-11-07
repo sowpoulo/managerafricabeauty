@@ -47,3 +47,26 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+.env
+.env.*
+ecosystem.config.js
+ecosystem.config.jsy
+*.sql
+*.log
+pb_data/
+pocketbase
+pb.zip
+*.zip
+db.json
+node_modules/
+dist/
+artifacts/api-server/uploads/
+var/
+html/
+*.save
+*.save.1
+*.tsyy
+*.tsy
+*.jsy
+*.ty
+*.csv

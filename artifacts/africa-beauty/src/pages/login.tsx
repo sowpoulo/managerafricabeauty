@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,29 +9,36 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const [, setLocation] = useLocation();
-  const loginMutation = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    loginMutation.mutate(
-      { data: { email, password } },
-      {
-        onSuccess: (data) => {
-          login(data.token, data.user as any);
-          if (data.user.role === "MANAGER") {
-            setLocation("/dashboard");
-          } else {
-            setLocation("/my-schedule");
-          }
-        },
-        onError: () => {
-          setError("Email ou mot de passe incorrect");
-        },
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Email ou mot de passe incorrect");
       }
-    );
+
+      const data = await res.json();
+      
+      // On utilise notre propre fonction login qui stocke le token correctement
+      login(data.token, data.user);
+      
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -116,9 +122,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full h-11 text-base font-medium"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
             >
-              {loginMutation.isPending ? "Connexion..." : "Se connecter"}
+              {isLoading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
 

@@ -1,61 +1,61 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetMe, setAuthTokenGetter, User, UserRole } from "@workspace/api-client-react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
+interface User { id: number; name: string; email: string; role: "MANAGER" | "EMPLOYEE"; salonId: number; }
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
-  login: (token: string) => void;
-  logout: () => void;
+  token: string | null;
   role: "MANAGER" | "EMPLOYEE" | null;
+  isLoading: boolean;
+  login: (token: string, user: User) => void;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+// Envoie le jeton avec toutes les requêtes des hooks générés
+setAuthTokenGetter(() => localStorage.getItem("africa_beauty_token"));
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem("africa_beauty_token"));
+  const [isLoading, setIsLoading] = useState(true);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
-    setAuthTokenGetter(() => localStorage.getItem("africa_beauty_token"));
+    async function checkAuth() {
+      const storedToken = localStorage.getItem("africa_beauty_token");
+      if (!storedToken) { setIsLoading(false); return; }
+      try {
+        const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${storedToken}` } });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user ?? data);
+          setToken(storedToken);
+        } else {
+          localStorage.removeItem("africa_beauty_token");
+          setToken(null); setUser(null);
+        }
+      } catch (e) { console.error("Erreur auth", e); } finally { setIsLoading(false); }
+    }
+    checkAuth();
   }, []);
 
-  const { data: user, isLoading, refetch } = useGetMe({
-    query: {
-      enabled: !!token,
-      retry: false,
-    }
-  });
-
-  const handleLogin = (newToken: string) => {
+  const login = (newToken: string, newUser: User) => {
     localStorage.setItem("africa_beauty_token", newToken);
-    setToken(newToken);
-    refetch();
+    setToken(newToken); setUser(newUser);
+    setLocation(newUser.role === "MANAGER" ? "/dashboard" : "/my-schedule");
   };
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem("africa_beauty_token");
-    setToken(null);
+    setToken(null); setUser(null);
+    setLocation("/login");
   };
-
-  let role: "MANAGER" | "EMPLOYEE" | null = null;
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      role = payload.role as "MANAGER" | "EMPLOYEE";
-    } catch (e) {
-      // invalid token
-    }
-  }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user: user || null,
-        isLoading,
-        login: handleLogin,
-        logout: handleLogout,
-        role: role || (user?.role as "MANAGER" | "EMPLOYEE") || null,
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, role: user?.role ?? null, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

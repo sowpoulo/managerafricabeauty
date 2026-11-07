@@ -2,9 +2,9 @@ import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export function formatEuro(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", {
+  return new Intl.NumberFormat("fr-MA", {
     style: "currency",
-    currency: "EUR",
+    currency: "MAD",
   }).format(amount);
 }
 

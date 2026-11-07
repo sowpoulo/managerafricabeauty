@@ -130,7 +130,7 @@ export default function ServicesPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Prix (€)</Label>
+                <Label>Prix (MAD)</Label>
                 <Input type="number" step="0.01" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">

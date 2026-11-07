@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  role         String
+  active       Boolean       @default(true)
+  salon_id     Int?
+  salon        Salon?        @relation(fields: [salon_id], references: [id])
+  appointments Appointment[]
+  @@map("users")
+}
+
+model Salon {
+  id           Int           @id @default(autoincrement())
+  name         String
+  users        User[]
+  services     Service[]
+  appointments Appointment[]
+  @@map("salons")
+}
+
+model Service {
+  id           Int           @id @default(autoincrement())
+  name         String
+  price        Float
+  duration     Int
+  salon_id     Int
+  salon        Salon         @relation(fields: [salon_id], references: [id])
+  appointments Appointment[]
+  @@map("services")
+}
+
+model Appointment {
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  status     String
+  user_id    Int
+  service_id Int
+  salon_id   Int
+  user       User     @relation(fields: [user_id], references: [id])
+  service    Service  @relation(fields: [service_id], references: [id])
+  salon      Salon    @relation(fields: [salon_id], references: [id])
+  @@map("appointments")
+}
